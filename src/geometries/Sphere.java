@@ -3,15 +3,21 @@ package geometries;
 import primitives.Point;
 import primitives.Vector;
 
+/**
+ * Create a class for representation a Sphere
+ *
+ * @author Eitan lafair
+ */
 public class Sphere extends RadialGeometry {
 
 
     public Point center;
 
     /**
-     * Constructor for RadialGeometry.
+     * Constructs a Sphere with a specified center point and radius.
      *
-     * @param radius the radius of the geometry
+     * @param center The center point of the sphere.
+     * @param radius The radius of the sphere.
      */
     Sphere(Point center, double radius) {
         super(radius);
@@ -20,6 +26,8 @@ public class Sphere extends RadialGeometry {
 
     @Override
     protected Vector getNormal(Point point) {
-        return null;
+        Vector vector = center.subtract(point).normalize();
+
+        return vector ;
     }
 }

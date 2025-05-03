@@ -14,7 +14,8 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class PlaneTests {
 
-    private static final double DELTA = 1e-6;
+    private static final double DELTA = 0.000001;
+    private static final double ONE = 1.0;
 
     /** Test method for {@link geometries.Plane#Plane(Point, Point, Point)}. */
     @Test
@@ -77,7 +78,7 @@ class PlaneTests {
         // TC01: Check if getNormal returns a unit vector orthogonal to the plane
         Vector result = plane.getNormal(new Point(0, 0, 0));
 
-        assertEquals(1, result.length(), DELTA, "Plane normal is not a unit vector");
+        assertEquals(ONE, result.length(), DELTA, "Plane normal is not a unit vector");
 
         // verify orthogonality
         assertEquals(0, result.dotProduct(v1), DELTA,

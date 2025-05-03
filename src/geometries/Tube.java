@@ -26,6 +26,13 @@ public class Tube extends RadialGeometry {
 
     @Override
     protected Vector getNormal(Point point) {
-        return null;
+        Vector tubeCenter = axis.direction;
+        Point tubePoint = axis.head;
+
+        double projection = tubeCenter.dotProduct(point.subtract(tubePoint));
+        Point tubeCenterPoint= tubePoint.add(tubeCenter.scale(projection));
+        Vector normal = point.subtract(tubeCenterPoint).normalize();
+
+        return normal;
     }
 }

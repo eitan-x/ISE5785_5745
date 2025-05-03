@@ -59,9 +59,6 @@ public class Point {
      */
     public final Vector subtract(Point point) {
         Vector result = new Vector(this.xyz.subtract(point.xyz));
-        if (result.equals(Vector.ZERO)) {
-            throw new IllegalArgumentException("Cannot create zero vector!");
-        }
         return result;
     }
 
