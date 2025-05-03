@@ -78,9 +78,14 @@ public class Vector extends Point {
     public Vector crossProduct(Vector vector) {
 
         //A × B = (y1*z2 - z1*y2, z1*x2 - x1*z2, x1*y2 - y1*x2)
-        return new Vector((this.xyz.d2() * vector.xyz.d3() - this.xyz.d3() * vector.xyz.d2())
-                , (this.xyz.d3() * vector.xyz.d1() - this.xyz.d1() * vector.xyz.d3())
-                , (this.xyz.d1() * vector.xyz.d2() - this.xyz.d2() * vector.xyz.d1()));
+        double x1 = this.xyz.d1(), y1 = this.xyz.d2(), z1 = this.xyz.d3();
+        double x2 = vector.xyz.d1(), y2 = vector.xyz.d2(), z2 = vector.xyz.d3();
+
+        double x = y1 * z2 - z1 * y2;
+        double y = z1 * x2 - x1 * z2;
+        double z = x1 * y2 - y1 * x2;
+
+        return new Vector(x, y, z);
 
     }
 
@@ -115,8 +120,7 @@ public class Vector extends Point {
      */
 
     public Vector normalize() {
-        double lengthOfVector = length();
-        return new Vector(xyz.reduce(lengthOfVector));
+        return new Vector(xyz.reduce(length()));
     }
 
     @Override
