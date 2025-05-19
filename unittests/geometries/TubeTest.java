@@ -20,10 +20,10 @@ class TubeTest {
                 "ERROR: The calculation of normal to the tube is not calculated correctly");
 
         // =============== Boundary Values Tests ==================
-        //Test when the point is orthogonal to the ray's head goes to the ZERO vector
-        assertThrows(IllegalArgumentException.class, () -> {
-                    tube.getNormal(new Point(0, 0, 1));
-                },
-                "ZERO vector is not allowed");
+        // Test at a boundary point: point lies exactly radius away from axis origin
+        assertEquals(new Vector(0, 1, 0),
+                tube.getNormal(new Point(0, 1, 0)),
+                "ERROR: Normal at boundary point not calculated correctly");
     }
+
 }

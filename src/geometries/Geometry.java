@@ -6,7 +6,7 @@ import primitives.Point;
 /**
  * Abstract class representing a geometric shape.
  */
-public abstract class Geometry {
+public abstract class Geometry implements Intersectable {
 
     /**
      * Returns the normal vector at a given point on the geometry.
@@ -14,7 +14,7 @@ public abstract class Geometry {
      * @param point the point on the geometric shape
      * @return the normal vector at the given point
      */
-    protected abstract Vector getNormal(Point point);
+    public abstract Vector getNormal(Point point);
 
 
 }

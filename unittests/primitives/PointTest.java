@@ -30,6 +30,9 @@ class PointTest {
     void subtract() {
         assertEquals(new Vector(3,3,9),v1.subtract(p3),"ERROR2");
 
+        // ============ Equivalence Partitions Tests ==============
+        assertThrows(IllegalArgumentException.class, () -> p1.subtract(p1), "ERROR2 - subtract point from itself");
+
     }
 
 
@@ -40,6 +43,9 @@ class PointTest {
     void distance() {
         assertEquals(Math.sqrt(30),p1.distance(p2),"ERROR3");
 
+        // ============ Equivalence Partitions Tests ==============
+        assertEquals(0, p1.distance(p1), "ERROR3 - distance from point to itself");
+
     }
 
     /**
@@ -48,6 +54,10 @@ class PointTest {
     @Test
     void distanceSquared() {
         assertEquals(30, p1.distanceSquared(p2),"ERROR4");
+
+
+        // ============ Equivalence Partitions Tests ==============
+        assertEquals(0, p1.distanceSquared(p1), "ERROR4 - distanceSquared from point to itself");
 
     }
 

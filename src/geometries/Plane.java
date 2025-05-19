@@ -1,14 +1,17 @@
 package geometries;
 
 import primitives.Point;
+import primitives.Ray;
 import primitives.Vector;
+
+import java.util.List;
 
 /**
  * A class for representing a Plane
  *
  * @author Eitan Lafair
  */
-public class Plane {
+public class Plane implements Intersectable{
     final Point _q0;
     final Vector _normal;
 
@@ -60,4 +63,11 @@ public class Plane {
     public Vector getNormal(Point point) {
         return _normal;
     }
+
+
+    @Override
+    public List<Point> findIntersections(Ray ray){
+        return null;
+    }
+
 }

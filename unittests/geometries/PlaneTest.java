@@ -65,29 +65,37 @@ class PlaneTests {
     void testGetNormal() {
         // ============ Equivalence Partitions Tests ==============
 
-        Point p1 = new Point(1, 0, 0);
-        Point p2 = new Point(0, 1, 0);
-        Point p3 = new Point(0, 0, 1);
+        Point p1 = new Point(1, 2, 3);
+        Point p2 = new Point(4, 0, 1);
+        Point p3 = new Point(0, -1, 2);
         Plane plane = new Plane(p1, p2, p3);
 
-        // generate expected normal using cross product
-        Vector v1 = p2.subtract(p1);
-        Vector v2 = p3.subtract(p1);
-        Vector expectedNormal = v1.crossProduct(v2).normalize();
+        // Expected normal vector manually calculated
+        double sqrt66 = Math.sqrt(66);
+        Vector expectedNormal = new Vector(-4 / sqrt66, -1 / sqrt66, -7 / sqrt66);
+
+        // Actual result from the getNormal method
+        Vector result = plane.getNormal(p1);
 
         // TC01: Check if getNormal returns a unit vector orthogonal to the plane
-        Vector result = plane.getNormal(new Point(0, 0, 0));
+        assertEquals(1, result.length(), DELTA, "Plane normal is not a unit vector");
 
-        assertEquals(ONE, result.length(), DELTA, "Plane normal is not a unit vector");
+        // Compute the original vectors for orthogonality check
+        Vector v1 = p2.subtract(p1);  // (3, -2, -2)
+        Vector v2 = p3.subtract(p1);  // (-1, -3, -1)
 
-        // verify orthogonality
+        // Check orthogonality of the result with both original vectors
         assertEquals(0, result.dotProduct(v1), DELTA,
                 "Plane normal is not orthogonal to vector p2 - p1");
         assertEquals(0, result.dotProduct(v2), DELTA,
                 "Plane normal is not orthogonal to vector p3 - p1");
 
-        // check same direction (or opposite)
-        assertTrue(result.equals(expectedNormal) || result.equals(expectedNormal.scale(-1)),
-                "Plane normal has incorrect direction");
+
+    }
+
+    @Test
+    void testFindIntersections() {
+
+
     }
 }

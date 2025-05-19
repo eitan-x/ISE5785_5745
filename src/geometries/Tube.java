@@ -4,6 +4,10 @@ import primitives.Point;
 import primitives.Ray;
 import primitives.Vector;
 
+import java.util.List;
+
+import static primitives.Util.isZero;
+
 /**
  * Create a class for representation a tube
  *
@@ -25,14 +29,20 @@ public class Tube extends RadialGeometry {
     }
 
     @Override
-    protected Vector getNormal(Point point) {
+    public Vector getNormal(Point point) {
         Vector tubeCenter = axis.direction;
         Point tubePoint = axis.head;
 
         double projection = tubeCenter.dotProduct(point.subtract(tubePoint));
+        if (isZero(projection)) return point.subtract(tubePoint).normalize();
         Point tubeCenterPoint= tubePoint.add(tubeCenter.scale(projection));
         Vector normal = point.subtract(tubeCenterPoint).normalize();
 
         return normal;
+    }
+
+    @Override
+    public List<Point> findIntersections(Ray ray) {
+        return List.of();
     }
 }
