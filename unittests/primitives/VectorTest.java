@@ -18,7 +18,7 @@ class VectorTest {
     Vector v6 = new Vector(4,0,3);
 
     /**
-     * Test method for {@link primitives.Vector#scale(double)}.
+     * Test method for {@link Vector#scale(double)}.
      */
     @Test
     void testScale() {
@@ -37,7 +37,7 @@ class VectorTest {
 
 
     /**
-     * Test method for {@link primitives.Vector#dotProduct(Vector)}.
+     * Test method for {@link Vector#dotProduct(Vector)}.
      */
     @Test
     void testDotProduct() {

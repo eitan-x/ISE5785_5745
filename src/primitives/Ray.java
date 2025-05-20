@@ -1,5 +1,7 @@
 package primitives;
 
+import static primitives.Util.isZero;
+
 /**
  * Opening a Class for representation Ray
  *
@@ -36,6 +38,19 @@ public class Ray {
     }
 
 
+    /**
+     * Returns a point on the ray at a given distance from the head of the ray.
+     *
+     * @param t The distance from the head of the ray. Must not be zero.
+     * @return The point at the given distance along the ray.
+     *
+     */
+    public Point getPoint(double t) {
+        if (isZero(t)) {
+            throw new IllegalArgumentException("t is equal to 0 produce an illegal ZERO vector");
+        }
+        return head.add(direction.scale(t));
+    }
 
 
 }

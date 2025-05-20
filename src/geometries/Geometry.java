@@ -1,7 +1,7 @@
 package geometries;
 
-import primitives.Vector;
 import primitives.Point;
+import primitives.Vector;
 
 /**
  * Abstract class representing a geometric shape.

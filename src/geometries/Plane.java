@@ -6,6 +6,9 @@ import primitives.Vector;
 
 import java.util.List;
 
+import static primitives.Util.alignZero;
+import static primitives.Util.isZero;
+
 /**
  * A class for representing a Plane
  *
@@ -67,7 +70,40 @@ public class Plane implements Intersectable{
 
     @Override
     public List<Point> findIntersections(Ray ray){
-        return null;
+        Point rayStart = ray.head; // The starting point of the ray.
+        Vector rayDirection = ray.direction; // The normalized direction of the ray.
+
+        if (_q0.equals(rayStart)) { // If the ray originates from the plane, it does not intersect the plane.
+            return null; // Return null as no intersection exists.
+        }
+
+        Vector planeNormal = _normal; // The plane's normal vector.
+
+        double denominator = planeNormal.dotProduct(rayDirection); // Denominator of parameter 't' in the intersection formula.
+
+        // Check if the ray is parallel to the plane (denominator is zero).
+        if (isZero(denominator)) { // A zero denominator implies no intersection or the ray lies within the plane.
+            return null; // Return null as no intersection occurs.
+        }
+
+        Vector difference = _q0.subtract(rayStart); // Vector from ray start point to reference point on the plane.
+        double numerator = alignZero(planeNormal.dotProduct(difference)); // Compute numerator for parameter 't'.
+
+        // t should be bigger than 0
+        // If the numerator is zero, the ray starts within the plane.
+        if (isZero(numerator)) {
+            return null;
+        }
+
+        double t = alignZero(numerator / denominator); // Compute the value of parameter 't'.
+
+        // Validate that 't' is positive, meaning the intersection occurs in front of the ray's starting point.
+        if (t <= 0) {
+            return null; // Return null as the intersection occurs behind the ray's start point.
+        }
+
+        return List.of(ray.getPoint(t)); // Return the intersection point as a single-element list.
     }
+
 
 }
