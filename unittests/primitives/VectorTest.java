@@ -56,8 +56,11 @@ class VectorTest {
     @Test
     void testCrossProduct() {
         // ============ Equivalence Partitions Tests ==============
+
         Vector v2 = new Vector(0, 3, -2);
+        Vector expected = new Vector(-13, 2, 3);
         Vector vr = v1.crossProduct(v2);
+        assertEquals(expected, vr, "crossProduct() wrong result");
 
         // TC01: Test that the length of the cross-product is the product of the lengths of the vectors
         // (orthogonal vectors taken for simplicity)

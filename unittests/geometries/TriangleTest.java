@@ -7,8 +7,8 @@ import primitives.Vector;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static java.lang.Math.sqrt;
+import static org.junit.jupiter.api.Assertions.*;
 
 class TriangleTest {
     private static final double DELTA = 0.000000001;
@@ -25,6 +25,12 @@ class TriangleTest {
 
         // When: calling getNormal
         Vector normal = triangle.getNormal(p1);
+        Vector expectedNormal = new Vector(4.0/sqrt(162), -5.0/sqrt(162), 11.0/sqrt(162));
+        Vector expectedNormal2 = new Vector(-4.0/sqrt(162), 5.0/sqrt(162), -11.0/sqrt(162));
+
+
+        assertTrue(expectedNormal.equals(normal) || expectedNormal2.equals(normal));
+
 
         // Then: check that the normal is unit length
         assertEquals(1, normal.length(), DELTA, "Normal is not a unit vector");

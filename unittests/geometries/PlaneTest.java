@@ -7,6 +7,7 @@ import primitives.Vector;
 
 import java.util.List;
 
+import static java.lang.Math.sqrt;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -72,12 +73,19 @@ class PlaneTests {
         Point p3 = new Point(0, -1, 2);
         Plane plane = new Plane(p1, p2, p3);
 
-        // Expected normal vector manually calculated
-        double sqrt66 = Math.sqrt(66);
-        Vector expectedNormal = new Vector(-4 / sqrt66, -1 / sqrt66, -7 / sqrt66);
-
         // Actual result from the getNormal method
         Vector result = plane.getNormal(p1);
+
+        // Expected normal vector manually calculated
+
+        Vector expectedNormal = new Vector(4.0/sqrt(162), -5.0/sqrt(162), 11.0/sqrt(162));
+        Vector expectedNormal2 = new Vector(-4.0/sqrt(162), 5.0/sqrt(162), -11.0/sqrt(162));
+
+        assertTrue(expectedNormal.equals(result) || expectedNormal2.equals(result));
+
+
+
+
 
         // TC01: Check if getNormal returns a unit vector orthogonal to the plane
         assertEquals(1, result.length(), DELTA, "Plane normal is not a unit vector");
