@@ -3,37 +3,52 @@ package renderer;
 import primitives.Point;
 import primitives.Ray;
 import primitives.Vector;
+import primitives.Color;
+import scene.Scene;
 
 import static primitives.Util.alignZero;
 
 /**
  * Represents a Camera in 3D space with adjustable settings for view direction,
  * position, and viewing plane properties.
- * Author: Eitan Lafair
+ * Handles ray construction, image rendering, and grid drawing on images.
+ * Uses a builder pattern for convenient setup.
+ *
+ * @author Eitan Lafair
  */
 public class Camera implements Cloneable {
-    private Vector vT0;      // Direction vector from camera to view plane
-    private Vector vUp;      // Up direction vector
-    private Vector vRight;   // Right direction vector
-    private Point p0;        // Camera position
+    private Vector vT0; // Direction vector from camera to view plane
+    private Vector vUp; // Up direction vector
+    private Vector vRight; // Right direction vector
+    private Point p0; // Camera position
 
     private Point pointCenter; // Center point of the view plane
-    private double height = 0.0;   // View plane height
-    private double width = 0.0;    // View plane width
+    private double height = 0.0; // View plane height
+    private double width = 0.0; // View plane width
     private double distance = 0.0; // Distance from camera to view plane
 
+    private ImageWriter imageWriter; // Responsible for writing image files
+    private RayTracerBase rayTracer; // Ray tracer for rendering
+    private int nX = 1; // Image resolution X
+    private int nY = 1; // Image resolution Y
+
     /**
-     * Default constructor for the Camera class.
+     * Default constructor.
      */
     public Camera() {
     }
 
+    /**
+     * Constructor with position and orientation vectors.
+     * @param point Camera position
+     * @param vector Forward direction
+     * @param vector1 Up direction
+     */
     public Camera(Point point, Vector vector, Vector vector1) {
     }
 
     /**
      * Returns a new instance of the Camera builder.
-     *
      * @return a Builder instance for creating a Camera object
      */
     public static Builder getBuilder() {
@@ -42,131 +57,149 @@ public class Camera implements Cloneable {
 
     /**
      * Constructs a ray through a pixel (i, j) on the camera's view plane.
-     *
-     * @param nX the number of horizontal pixels in the view plane
-     * @param nY the number of vertical pixels in the view plane
-     * @param j  the column index of the pixel
-     * @param i  the row index of the pixel
-     * @return a Ray through the specified pixel
+     * @param nX number of horizontal pixels
+     * @param nY number of vertical pixels
+     * @param j column index of the pixel
+     * @param i row index of the pixel
+     * @return the ray passing through the pixel
      */
     public Ray constructRay(int nX, int nY, int j, int i) {
-        // Calculate the center of the view plane
         pointCenter = p0.add(vT0.scale(distance));
-
-        // Calculate the width and height of each pixel
         double rX = width / nX;
         double rY = height / nY;
 
-        // Calculate the pixel's center offsets from the view plane center
         double xJ = (j - (nX - 1) / 2d) * rX;
         double yI = -(i - (nY - 1) / 2d) * rY;
 
-        // Start from the center of the view plane
         Point pIJ = pointCenter;
+        if (xJ != 0) pIJ = pIJ.add(vRight.scale(xJ));
+        if (yI != 0) pIJ = pIJ.add(vUp.scale(yI));
 
-        // Move right by xJ
-        if (xJ != 0) {
-            pIJ = pIJ.add(vRight.scale(xJ));
-        }
-
-        // Move up by yI
-        if (yI != 0) {
-            pIJ = pIJ.add(vUp.scale(yI));
-        }
-
-        // Create the direction vector from camera to pixel
         Vector vIJ = pIJ.subtract(p0);
-
-        // Normalize direction (optional)
-        Vector vIJ1 = vIJ.normalize();
-
-        return new Ray(p0, vIJ); // Return the ray from camera position to pixel
+        return new Ray(p0, vIJ);
     }
 
     /**
-     * A builder class for creating instances of the Camera with configurable properties.
-     * Author: itan lafair
+     * Casts a ray through a pixel (j, i) and gets its color by tracing it.
+     * @param j column index of the pixel
+     * @param i row index of the pixel
+     * @return color obtained by tracing the ray
+     */
+    private Color castRay(int j, int i) {
+        Ray ray = constructRay(
+                this.imageWriter.nX(),
+                this.imageWriter.nY(),
+                j,
+                i);
+        return this.rayTracer.traceRay(ray);
+    }
+
+    /**
+     * Renders the image by tracing rays through all pixels.
+     * @return this Camera object
+     */
+    public Camera renderImage() {
+        if (this.imageWriter == null)
+            throw new UnsupportedOperationException("Missing imageWriter");
+        if (this.rayTracer == null)
+            throw new UnsupportedOperationException("Missing rayTracerBase");
+
+        for (int i = 0; i < this.imageWriter.nX(); i++) {
+            for (int j = 0; j < this.imageWriter.nY(); j++) {
+                Color color = castRay(j, i);
+                this.imageWriter.writePixel(j, i, color);
+            }
+        }
+        return this;
+    }
+
+    /**
+     * Prints a grid on the image using the given color and interval.
+     * @param interval grid spacing
+     * @param color grid color
+     * @return this Camera object
+     */
+    public Camera printGrid(int interval, Color color) {
+        for (int i = 0; i < nY; i++) {
+            for (int j = 0; j < nX; j++) {
+                if (i % interval == 0 || j % interval == 0) {
+                    imageWriter.writePixel(j, i, color);
+                }
+            }
+        }
+        return this;
+    }
+
+    /**
+     * Writes the image to a file.
+     * @param filename the name of the image file (without extension)
+     * @return this Camera object
+     */
+    public Camera writeToImage(String filename) {
+        imageWriter.writeToImage(filename);
+        return this;
+    }
+
+    /**
+     * A builder class for creating Camera instances with fluent API.
      */
     public static class Builder {
         private final Camera camera = new Camera();
 
         /**
-         * Sets the location (position) of the camera.
-         *
-         * @param p the point representing the camera's location
-         * @return this builder instance for method chaining
+         * Sets the location of the camera.
+         * @param p the camera position
+         * @return this builder instance
          */
         public Builder setLocation(Point p) {
-            if (p == null) {
-                throw new IllegalArgumentException("Camera location point cannot be null");
-            }
-            camera.p0 = p; // Set the camera position
+            if (p == null) throw new IllegalArgumentException("Camera location cannot be null");
+            camera.p0 = p;
             return this;
         }
 
         /**
-         * Sets the camera's viewing direction using two orthogonal vectors.
-         *
-         * @param vTo the direction vector toward the target
-         * @param vUp the up direction vector
-         * @return this builder instance for method chaining
+         * Sets the camera orientation using vTo and vUp vectors.
+         * @param vTo direction to look at
+         * @param vUp up direction
+         * @return this builder instance
          */
         public Builder setDirection(Vector vTo, Vector vUp) {
-            if (vTo == null || vUp == null) {
+            if (vTo == null || vUp == null)
                 throw new IllegalArgumentException("Direction vectors cannot be null");
-            }
-
-            // Check orthogonality
-            if (!(alignZero(vTo.dotProduct(vUp)) == 0)) {
+            if (alignZero(vTo.dotProduct(vUp)) != 0)
                 throw new IllegalArgumentException("vTo and vUp must be orthogonal");
-            }
 
-            // Normalize and set the vectors
             camera.vT0 = vTo.normalize();
             camera.vUp = vUp.normalize();
             camera.vRight = camera.vT0.crossProduct(camera.vUp);
-
             return this;
         }
 
         /**
-         * Sets the camera's viewing direction using a target point and an approximate
-         * upward direction vector.
-         *
-         * @param target   the point the camera is directed toward
-         * @param approxUp the approximate upward vector
+         * Sets camera direction to face a target point using an approximate up vector.
+         * @param target target point to look at
+         * @param approxUp approximate up direction
          * @return this builder instance
          */
         public Builder setDirection(Point target, Vector approxUp) {
-            if (target == null || approxUp == null) {
-                throw new IllegalArgumentException("Target point and approxUp vector cannot be null");
-            }
+            if (target == null || approxUp == null)
+                throw new IllegalArgumentException("Target and approxUp cannot be null");
+            if (camera.p0 == null)
+                throw new IllegalArgumentException("Camera location must be set before direction");
 
-            if (camera.p0 == null) {
-                throw new IllegalArgumentException("Camera location must be set before setting direction");
-            }
-
-            // Compute the forward direction (vTo)
             Vector vTo = target.subtract(camera.p0).normalize();
-
-            // Compute right vector as cross product of vTo and approxUp
             Vector vRight = vTo.crossProduct(approxUp).normalize();
-
-            // Recalculate up vector for orthogonality
             Vector vUp = vRight.crossProduct(vTo).normalize();
 
             camera.vT0 = vTo;
             camera.vRight = vRight;
             camera.vUp = vUp;
-
             return this;
         }
 
         /**
-         * Sets the camera's viewing direction using only a target point. Assumes
-         * the global Y-axis as the approximate up direction.
-         *
-         * @param target the point the camera is directed toward
+         * Sets camera direction to look at a target with default up vector (0,1,0).
+         * @param target target point to look at
          * @return this builder instance
          */
         public Builder setDirection(Point target) {
@@ -175,64 +208,79 @@ public class Camera implements Cloneable {
 
         /**
          * Sets the size of the view plane.
-         *
-         * @param height the height of the view plane
-         * @param width  the width of the view plane
-         * @return this builder instance for method chaining
+         * @param height height of the view plane
+         * @param width width of the view plane
+         * @return this builder instance
          */
         public Builder setVpSize(double height, double width) {
             if (alignZero(width) <= 0 || alignZero(height) <= 0)
-                throw new IllegalArgumentException("Width and height must be greater than 0");
-
+                throw new IllegalArgumentException("View plane size must be positive");
             camera.height = height;
             camera.width = width;
             return this;
         }
 
         /**
-         * Sets the distance of the view plane from the camera.
-         *
-         * @param distance the distance of the view plane
-         * @return this builder instance for method chaining
+         * Sets the distance between the camera and the view plane.
+         * @param distance distance to view plane
+         * @return this builder instance
          */
         public Builder setVpDistance(double distance) {
             if (alignZero(distance) <= 0)
-                throw new IllegalArgumentException("Distance must be greater than 0");
+                throw new IllegalArgumentException("View plane distance must be positive");
             camera.distance = distance;
             return this;
         }
 
         /**
-         * Sets the resolution of the view plane. Method reserved for future implementation.
-         *
-         * @param nX the number of horizontal pixels
-         * @param nY the number of vertical pixels
-         * @return this builder instance for method chaining
+         * Sets the resolution of the view plane.
+         * @param nX number of horizontal pixels
+         * @param nY number of vertical pixels
+         * @return this builder instance
          */
         public Builder setResolution(int nX, int nY) {
-            // Currently not implemented
+            if (nX <= 0 || nY <= 0)
+                throw new IllegalArgumentException("Resolution must be positive");
+            camera.nX = nX;
+            camera.nY = nY;
             return this;
         }
 
         /**
-         * Builds and returns the Camera object with the configured settings.
-         *
-         * @return the constructed Camera object
+         * Sets the ray tracer using scene and type.
+         * @param scene the scene to use
+         * @param type the ray tracer type (currently only SIMPLE supported)
+         * @return this builder instance
+         */
+        public Builder setRayTracer(Scene scene, RayTracerType type) {
+            if (type == RayTracerType.SIMPLE) {
+                camera.rayTracer = new SimpleRayTracer(scene);
+            } else {
+                camera.rayTracer = null;
+            }
+            return this;
+        }
+
+        /**
+         * Builds the final camera object.
+         * @return the constructed Camera
          */
         public Camera build() {
-            // Validation before building
             if (camera.p0 == null)
-                throw new IllegalStateException("Camera location (p0) must be set");
-
+                throw new IllegalStateException("Camera location must be set");
             if (camera.vT0 == null || camera.vUp == null || camera.vRight == null)
-                throw new IllegalStateException("Camera direction vectors (vTo, vUp, vRight) must be set");
-
+                throw new IllegalStateException("Camera direction vectors must be set");
             if (alignZero(camera.width) <= 0 || alignZero(camera.height) <= 0)
-                throw new IllegalStateException("View plane size (width, height) must be set and > 0");
-
+                throw new IllegalStateException("View plane size must be set");
             if (alignZero(camera.distance) <= 0)
-                throw new IllegalStateException("View plane distance must be set and > 0");
+                throw new IllegalStateException("View plane distance must be set");
+            if (camera.nX <= 0 || camera.nY <= 0)
+                throw new IllegalStateException("Resolution must be positive");
 
+            camera.imageWriter = new ImageWriter(camera.nX, camera.nY);
+            if (camera.rayTracer == null) {
+                camera.rayTracer = new SimpleRayTracer(null); // Empty scene
+            }
             return camera;
         }
     }

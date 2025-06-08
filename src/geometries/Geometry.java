@@ -1,5 +1,6 @@
 package geometries;
 
+import primitives.Color;
 import primitives.Point;
 import primitives.Vector;
 
@@ -8,6 +9,10 @@ import primitives.Vector;
  */
 public abstract class Geometry implements Intersectable {
 
+
+
+
+
     /**
      * Returns the normal vector at a given point on the geometry.
      *
@@ -15,6 +20,8 @@ public abstract class Geometry implements Intersectable {
      * @return the normal vector at the given point
      */
     public abstract Vector getNormal(Point point);
+
+
 
 
 }
