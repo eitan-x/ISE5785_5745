@@ -12,13 +12,13 @@ import java.util.List;
  *
  * @author Eitan Lafair
  */
-public interface Intersectable {
-
+public abstract interface Intersectable {
+    
     /**
      * Finds intersection points between the given ray and the geometric object.
      *
      * @param ray The ray for which to find intersections with the geometric object.
      * @return A list of intersection points if there are any, or {@code null} if no intersections are found.
      */
-    List<Point> findIntersections(Ray ray);
+   public List<Point> findIntersections(Ray ray);
 }

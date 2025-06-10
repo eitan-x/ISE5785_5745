@@ -6,12 +6,36 @@ import primitives.Vector;
 
 /**
  * Abstract class representing a geometric shape.
+ * @author Eitan Lafair
  */
 public abstract class Geometry implements Intersectable {
 
 
+    /**
+     * The emission color of the geometry (default is black).
+     */
+    protected Color emission = Color.BLACK;
 
+    /**
+     * Returns the emission color of the geometry.
+     *
+     * @return the emission color
+     */
+    public Color getEmission() {
+        return emission;
+    }
 
+    /**
+     * Sets the emission color of the geometry.
+     * This method supports method chaining (Builder pattern).
+     *
+     * @param emission the emission color to set
+     * @return this geometry instance
+     */
+    public Geometry setEmission(Color emission) {
+        this.emission = emission;
+        return this;
+    }
 
     /**
      * Returns the normal vector at a given point on the geometry.
