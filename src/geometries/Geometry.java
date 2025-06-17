@@ -1,5 +1,6 @@
 package geometries;
 
+import lighting.Material;
 import primitives.Color;
 import primitives.Point;
 import primitives.Vector;
@@ -8,13 +9,30 @@ import primitives.Vector;
  * Abstract class representing a geometric shape.
  * @author Eitan Lafair
  */
-public abstract class Geometry implements Intersectable {
+public abstract class Geometry extends Intersectable {
 
 
     /**
      * The emission color of the geometry (default is black).
      */
     protected Color emission = Color.BLACK;
+
+
+
+    private Material material = new Material();
+
+    public Material getMaterial() {
+        return material;
+    }
+
+
+    public Geometry setMaterial(Material material) {
+        this.material = material;
+        return this;
+
+    }
+
+
 
     /**
      * Returns the emission color of the geometry.

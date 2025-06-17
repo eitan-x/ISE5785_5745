@@ -38,66 +38,44 @@ public class Sphere extends RadialGeometry {
 
 
     @Override
-    public List<Point> findIntersections(Ray ray) {
+    protected List<Intersection> calculateIntersectionsHelper(Ray ray)  {
+        if (ray.head.equals(center)) {
+            // If the ray's head is at the center of the sphere, return one intersection point
+            return List.of(new Intersection(this, ray.getPoint(radius) , this.getMaterial()));
+        }
+        // Create a vector from the ray's head to the sphere's center
+        Vector u = center.subtract(ray.head);
+        // Calculate the projection of u onto the ray's direction
+        double tm = ray.direction.dotProduct(u);
+        // Calculate the distance from the sphere's center to the projection
+        double d = Math.sqrt(u.lengthSquared() - tm * tm);
 
-        // The starting point of the ray
-        Point p0 = ray.head;
+        // If d is greater than the sphere's radius, there are no intersections
+        if (d >= radius) return null;
 
-        // Sphere's center point
-        Point O = center;
+        // Calculate th and t0, t1
+        double th = Math.sqrt(radius * radius - d * d);
 
-        // Direction vector of the ray
-        Vector V = ray.direction;
+        double t0 = alignZero(tm - th);
+        double t1 = alignZero(tm + th);
 
-        // Check if the ray starts at the sphere's center
-        if (O.equals(p0)) {
-
-            // Calculate the intersection point by scaling the direction vector to the sphere's radius
-            Point newPoint = p0.add(ray.direction.scale(radius));
-            return List.of(newPoint);
+        // If t0 and t1 are both positive, return both intersection points
+        if (t0 > 0 && t1 > 0) {
+            return List.of(
+                    new Intersection(this, ray.getPoint(t0),this.getMaterial()),
+                    new Intersection(this, ray.getPoint(t1),this.getMaterial()));
         }
 
-        // Vector from the ray's starting point to the sphere's center
-        Vector U = O.subtract(p0);
-
-        // Projection of U on the direction vector (ray's parameter value at closest approach)
-        double tm = V.dotProduct(U);
-
-        // Distance from the sphere's center to the closest point on the ray
-        double d = alignZero(Math.sqrt(U.lengthSquared() - tm * tm));
-
-        // If the distance is greater than or equal to the sphere's radius, there's no intersection
-        if (d >= radius) {
-            return null;
+        // If only one of them is positive, return that intersection point
+        if (t0 > 0) {
+            return List.of(new Intersection(this, ray.getPoint(t0),this.getMaterial()));
         }
 
-        // Calculate the half-chord distance along the ray within the sphere
-        double th = alignZero(Math.sqrt(radius * radius - d * d));
-
-        // Calculate the two intersection points' parameters
-        double t1 = tm - th;
-        double t2 = tm + th;
-
-        // If both intersection points are in front of the ray's start, return both points
-        if (t1 > 0 && t2 > 0) {
-
-            return List.of(ray.getPoint(t1), ray.getPoint(t2));
-        }
-
-        // If only the first intersection point is valid, return that point
         if (t1 > 0) {
-
-            return List.of(ray.getPoint(t1));
+            return List.of(new Intersection(this, ray.getPoint(t1),this.getMaterial()));
         }
 
-        // If only the second intersection point is valid, return that point
-        if (t2 > 0) {
-
-            return List.of(ray.getPoint(t2));
-        }
-
-        // If neither intersection point is valid, return null
+        // If both are negative, return null
         return null;
-
     }
 }

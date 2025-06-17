@@ -2,6 +2,7 @@ package renderer;
 
 import static java.awt.Color.*;
 
+import lighting.Material;
 import org.junit.jupiter.api.Test;
 
 import geometries.Sphere;
@@ -81,41 +82,46 @@ class RenderTests {
          .writeToImage("color render test");
    }
 
-   /** Test for XML based scene - for bonus */
-   @Test
-   void basicRenderXml() {
-      Scene scene = new Scene("Using XML");
-      // enter XML file name and parse from XML file into scene object instead of the
-      // new Scene above,
-      // Use the code you added in appropriate packages
-      // ...
-      // NB: unit tests is not the correct place to put XML parsing code
 
-      camera //
-         .setRayTracer(scene, RayTracerType.SIMPLE) //
-         .setResolution(1000, 1000) //
-         .build() //
-         .renderImage() //
-         .printGrid(100, new Color(YELLOW)) //
-         .writeToImage("xml render test");
+   @Test
+   void renderAmbientMaterialTest() {
+      // Create a new scene with a white ambient light and green background
+      Scene scene = new Scene("Ambient material test")
+              .setBackground(new Color(75, 127, 90)) // Optional background color
+              .setAmbientLight(new AmbientLight(new Color(WHITE))); // Set ambient light to white
+
+      // Add geometries with material containing ambient reflection coefficients (KA)
+      scene.geometries
+              .add(
+                      // Center sphere with KA = (0.4, 0.4, 0.4)
+                      new Sphere(new Point(0, 0, -100), 50d)
+                              .setMaterial(new Material().setkA(new Double3(0.4))),
+
+                      // Top-left triangle (formerly green) with KA = (0, 0.8, 0)
+                      new Triangle(new Point(-100, 0, -100), new Point(0, 100, -100), new Point(-100, 100, -100))
+                              .setMaterial(new Material().setkA(new Double3(0, 0.8, 0))),
+
+                      // Bottom-left triangle (formerly red) with KA = (0.8, 0, 0)
+                      new Triangle(new Point(-100, 0, -100), new Point(0, -100, -100), new Point(-100, -100, -100))
+                              .setMaterial(new Material().setkA(new Double3(0.8, 0, 0))),
+
+                      // Bottom-right triangle (formerly blue) with KA = (0, 0, 0.8)
+                      new Triangle(new Point(100, 0, -100), new Point(0, -100, -100), new Point(100, -100, -100))
+                              .setMaterial(new Material().setkA(new Double3(0, 0, 0.8)))
+              );
+
+      // Build the camera and render the image with a white grid
+      camera
+              .setRayTracer(scene, RayTracerType.SIMPLE)
+              .setResolution(1000, 1000)
+              .build()
+              .renderImage()
+              .printGrid(100, new Color(WHITE))
+              .writeToImage("ambient material test"); // New output file name
    }
 
-   /** Test for JSON based scene - for bonus */
-   @Test
-   void basicRenderJson() {
-      Scene scene = new Scene("Using Json");
-      // enter XML file name and parse from JSON file into scene object instead of the
-      // new Scene above,
-      // Use the code you added in appropriate packages
-      // ...
-      // NB: unit tests is not the correct place to put XML parsing code
 
-      camera //
-         .setRayTracer(scene, RayTracerType.SIMPLE) //
-         .setResolution(1000, 1000) //
-         .build() //
-         .renderImage() //
-         .printGrid(100, new Color(YELLOW)) //
-         .writeToImage("xml render test");
-   }
+
+
+
 }

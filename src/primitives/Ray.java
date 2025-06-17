@@ -3,6 +3,7 @@ package primitives;
 import java.util.List;
 
 import static primitives.Util.isZero;
+import geometries.Intersectable.Intersection;
 
 /**
  * Opening a Class for representation Ray
@@ -55,30 +56,42 @@ public class Ray {
     }
 
 
+    public Intersection findClosestIntersection(List<Intersection> intersections) {
+        if (intersections == null || intersections.isEmpty()) {
+            return null;
+        }
+        Intersection closest = null;
+        double minDistance = Double.POSITIVE_INFINITY;
+
+        for (Intersection inter : intersections) {
+            double distance = head.distance(inter.point);
+            if (distance < minDistance) {
+                minDistance = distance;
+                closest = inter;
+            }
+        }
+        return closest;
+    }
 
     /**
      * Finds the closest point to the ray's origin from a list of points.
      *
-     * @param pointList List of points to search.
      * @return The closest point to the ray's head, or null if the list is empty.
      */
 
-    public Point findClosestPoint(List<Point> pointList) {
-        Point closestPoint = null;
-        double minDistance = Double.MAX_VALUE;
-        double pointDistance; // the distance between the "this.p0" to each point in the list
-
-        if (!pointList.isEmpty()) {
-            for (var pointInList : pointList) {
-                pointDistance = this.head.distance(pointInList);
-                if (pointDistance < minDistance) {
-                    minDistance = pointDistance;
-                    closestPoint = pointInList;
-                }
-            }
+    public Point findClosestPoint(List<Point> points) {
+        if (points == null || points.isEmpty()) {
+            return null;
         }
-        return closestPoint;
+        Intersection closest = findClosestIntersection(
+                points.stream().map(p -> new Intersection(null, p,null)).toList()
+        );
+        return closest == null ? null : closest.point;
     }
+
+
+
+
 
 
 

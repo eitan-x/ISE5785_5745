@@ -6,6 +6,8 @@ import primitives.Vector;
 import primitives.Color;
 import scene.Scene;
 
+import java.util.MissingResourceException;
+
 import static primitives.Util.alignZero;
 
 /**
@@ -31,6 +33,12 @@ public class Camera implements Cloneable {
     private RayTracerBase rayTracer; // Ray tracer for rendering
     private int nX = 1; // Image resolution X
     private int nY = 1; // Image resolution Y
+
+
+    private static final String CAMERA_CLASS_NAME = "Camera";
+    private static final String MISSING_DATA_MSG = "Missing rendering data";
+
+
 
     /**
      * Default constructor.
@@ -267,9 +275,19 @@ public class Camera implements Cloneable {
          */
         public Camera build() {
             if (camera.p0 == null)
-                throw new IllegalStateException("Camera location must be set");
-            if (camera.vT0 == null || camera.vUp == null || camera.vRight == null)
-                throw new IllegalStateException("Camera direction vectors must be set");
+                throw new MissingResourceException(MISSING_DATA_MSG,CAMERA_CLASS_NAME,"position");
+
+            if (camera.vT0 == null || camera.vUp == null)
+                throw new MissingResourceException(MISSING_DATA_MSG,CAMERA_CLASS_NAME,"vTO or vUP");
+
+            if (camera.vRight == null) {
+                // ננרמל את vTo ו־vUp לפני החישוב
+                camera.vT0 = camera.vT0.normalize();
+                camera.vUp = camera.vUp.normalize();
+
+                camera.vRight = camera.vT0.crossProduct(camera.vUp).normalize();
+            }
+
             if (alignZero(camera.width) <= 0 || alignZero(camera.height) <= 0)
                 throw new IllegalStateException("View plane size must be set");
             if (alignZero(camera.distance) <= 0)
@@ -281,7 +299,18 @@ public class Camera implements Cloneable {
             if (camera.rayTracer == null) {
                 camera.rayTracer = new SimpleRayTracer(null); // Empty scene
             }
-            return camera;
+            camera.vT0 = camera.vT0.normalize();
+            camera.vUp = camera.vUp.normalize();
+            camera.vRight = camera.vRight.normalize();
+
+            try {
+                return (Camera)camera.clone();
+            } catch (CloneNotSupportedException e) {
+                Camera temp = new Camera();
+                temp =camera;
+                return temp;
+            }
         }
+
     }
 }

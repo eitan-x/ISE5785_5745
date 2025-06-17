@@ -19,38 +19,49 @@ public class Triangle extends Polygon {
     }
 
     @Override
-    public List<Point> findIntersections(Ray ray){
-        // we take three vectors from the same starting point and connect them to the triangle's vertices
-        // we get a pyramid
-
-        //Check if the ray intersect the plane.
-        if (plane.findIntersections(ray) == null) {
+    protected List<Intersection> calculateIntersectionsHelper(Ray ray) {
+        var intersections = plane.findIntersections(ray);
+        // Check if the ray intersects the plane of the triangle
+        if (intersections == null)
             return null;
-        }
-        // the three vectors from the same starting point
-        Vector v1 = vertices.get(0).subtract(ray.head);
-        Vector v2 = vertices.get(1).subtract(ray.head);
-        Vector v3 = vertices.get(2).subtract(ray.head);
 
+        // Retrieve the vertices of the triangle
+        Point p0 = vertices.getFirst();
+        Point p1 = vertices.get(1);
+        Point p2 = vertices.getLast();
 
-        //we want to get a normal for each pyramid's face so we do the crossProduct
+        // Retrieve the direction vector and head point of the ray
+        Vector rayDirection = ray.direction;
+        Point rayPoint = ray.head;
+
+        if (p0.equals(rayPoint) || p1.equals(rayPoint) || p2.equals(rayPoint))
+            return null; // The ray's head is one of the triangle's vertices
+
+        // Calculate vectors representing edges of the triangle
+        Vector v1 = p0.subtract(rayPoint);
+        Vector v2 = p1.subtract(rayPoint);
+        // Calculate normal vectors to the triangle's edges
         Vector n1 = v1.crossProduct(v2).normalize();
+        // Calculate dot products between the normal vectors and the ray direction
+        double d1 = alignZero(n1.dotProduct(rayDirection));
+        // Check if the ray does not intersect the triangle.
+        if (d1 == 0)
+            return null;
+
+        Vector v3 = p2.subtract(rayPoint);
         Vector n2 = v2.crossProduct(v3).normalize();
+        double d2 = alignZero(n2.dotProduct(rayDirection));
+        // Check if the ray does not intersect the triangle
+        if (d1 * d2 <= 0)
+            return null;
+
         Vector n3 = v3.crossProduct(v1).normalize();
+        double d3 = alignZero(n3.dotProduct(rayDirection));
+        // Check if the ray does not intersect the triangle
+        if (d1 * d3 <= 0)
+            return null;
 
-        // the ray's vector  - it has the same starting point as the three vectors from above
-        Vector v = ray.direction;
-
-        // check if the vector's direction (from Subtraction between the ray's vector to each vector from above) are equal
-        // if not - there is no intersection point between the ray and the triangle
-        if ((alignZero(v.dotProduct(n1)) > 0 && alignZero(v.dotProduct(n2)) > 0 && alignZero(v.dotProduct(n3)) > 0) ||
-                (alignZero(v.dotProduct(n1)) < 0 && alignZero(v.dotProduct(n2)) < 0 && alignZero(v.dotProduct(n3)) < 0)){
-
-            return plane.findIntersections(ray);
-        }
-        return null;
-
-
-
+        return List.of(new Intersection(this, intersections.getFirst(), this.getMaterial()));
     }
+
 }

@@ -12,7 +12,7 @@ import java.util.List;
  *
  * @author Eitan Lafair
  */
-public class Geometries implements Intersectable {
+public class Geometries extends Intersectable {
 
     private final List<Intersectable> intersectables = new LinkedList<>();
 
@@ -63,6 +63,20 @@ public class Geometries implements Intersectable {
             }
         }
 
+        return intersections;
+    }
+
+    @Override
+    protected List<Intersection> calculateIntersectionsHelper(Ray ray) {
+        List<Intersection> intersections = null;
+        for (Intersectable geometry : intersectables) {
+            var geometryIntersections = geometry.calculateIntersections(ray);
+            if (geometryIntersections != null) {
+                if (intersections == null)
+                    intersections = new LinkedList<>();
+                intersections.addAll(geometryIntersections);
+            }
+        }
         return intersections;
     }
 }

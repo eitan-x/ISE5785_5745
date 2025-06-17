@@ -3,32 +3,28 @@ package lighting;
 import primitives.Color;
 
 /**
- * Represents ambient light in a scene, which uniformly illuminates all objects.
- * Ambient light has no direction and affects all objects equally.
+ * Ambient light source — uniform light with no direction.
+ *
+ * @author Eitan
  */
-public class AmbientLight {
+public class AmbientLight extends Light {
 
-    private final Color intensity;
-
-    /**
-     * A constant representing the absence of ambient light (black).
-     */
+    /** Constant representing no ambient light (black) */
     public static final AmbientLight NONE = new AmbientLight(Color.BLACK);
 
     /**
-     * Constructs an AmbientLight object with a given color intensity.
-     *
-     * @param intensity The color/intensity of the ambient light.
+     * Creates ambient light with given color intensity.
+     * @param ia ambient intensity
      */
-    public AmbientLight(Color intensity) {
-        this.intensity = intensity;
+    public AmbientLight(Color ia) {
+        super(ia);
     }
 
     /**
-     * Returns the color intensity of the ambient light.
-     *
-     * @return The color intensity.
+     * Returns ambient light intensity.
+     * @return color intensity
      */
+
     public Color getIntensity() {
         return intensity;
     }
