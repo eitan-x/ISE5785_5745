@@ -126,7 +126,7 @@ class LightsTests {
    void sphereSpot() {
       scene1.geometries.add(sphere);
       scene1.lights.add(new SpotLight(sphereLightColor, sphereLightPosition, sphereLightDirection) //
-         .setKl(0.001).setKQ(0.0001));
+         .setKl(0.001).setKQ(0.0001).setNarrowBeam(20));
 
       camera1 //
          .setResolution(500, 500) //
@@ -192,7 +192,7 @@ class LightsTests {
    void trianglesSpotSharp() {
       scene2.geometries.add(triangle1, triangle2);
       scene2.lights.add(new SpotLight(trianglesLightColor, trianglesLightPosition, trianglesLightDirection) //
-         .setKl(0.001).setKQ(0.00004).setNarrowBeam(10));
+         .setKl(0.00001).setKQ(0.00004).setNarrowBeam(10));
 
       camera2.setResolution(500, 500) //
          .build() //
@@ -203,53 +203,62 @@ class LightsTests {
     * Produce a picture of a sphere lighted by combined directional, point, and spot lights
     */
    @Test
-   void sphereMultiLights() {
+   void coolSphereLightingTest() {
+      sphere.setMaterial(new Material().setKD(0.6).setKS(0.4).setShininess(100));
       scene1.geometries.add(sphere);
-      // add multiple light sources: directional, point, spotlight
+      scene1.setAmbientLight(new AmbientLight(new Color(50, 50, 50)));
+
+      // Directional light from above
+      scene1.lights.add(new DirectionalLight(new Color(255, 180, 180), new Vector(0, -1, -1)));
+
+      // Point light from the side
       scene1.lights.add(
-              new DirectionalLight(sphereLightColor, sphereLightDirection)
+              new PointLight(new Color(180, 255, 180), new Point(60, 0, 50))
+                      .setKl(0.001).setKQ(0.0001)
       );
+
+      // Spotlight from below with narrow beam
       scene1.lights.add(
-              new PointLight(sphereLightColor, sphereLightPosition)
-                      .setKl(0.002).setKQ(0.0001)
-      );
-      scene1.lights.add(
-              new SpotLight(sphereLightColor, sphereLightPosition, sphereLightDirection)
-                      .setKl(0.001).setKQ(0.00005).setNarrowBeam(15)
+              new SpotLight(new Color(180, 180, 255), new Point(0, -60, 40), new Vector(0, 1, -0.5))
+                      .setKl(0.001).setKQ(0.00005).setNarrowBeam(10)
       );
 
       camera1
-              .setResolution(500, 500)
+              .setResolution(600, 600)
               .build()
               .renderImage()
-              .writeToImage("TEST1");
+              .writeToImage("CoolSphereLighting");
    }
 
-   /**
-    * Produce a picture of two triangles lighted by combined directional, point, and spot lights
-    */
+
    @Test
-   void trianglesMultiLights() {
+   void testTrianglesContrastLighting() {
       scene2.geometries.add(triangle1, triangle2);
-      // add multiple light sources: directional, point, spotlight
+      scene2.setAmbientLight(new AmbientLight(new Color(20, 20, 20)));
+
+      // אור עוצמתי ראשון רק מצד שמאל
       scene2.lights.add(
-              new DirectionalLight(trianglesLightColor, trianglesLightDirection)
-      );
-      scene2.lights.add(
-              new PointLight(trianglesLightColor, trianglesLightPosition)
-                      .setKl(0.003).setKQ(0.0002)
-      );
-      scene2.lights.add(
-              new SpotLight(trianglesLightColor, trianglesLightPosition, trianglesLightDirection)
-                      .setKl(0.002).setKQ(0.0001).setNarrowBeam(20)
+              new SpotLight(new Color(800, 200, 200), new Point(-100, 50, 0), new Vector(1, -1, -2))
+                      .setKl(0.001).setKQ(0.00005).setNarrowBeam(10)
       );
 
-      camera2
-              .setResolution(500, 500)
+      // אור רך מהצד הימני העליון
+      scene2.lights.add(
+              new DirectionalLight(new Color(100, 100, 255), new Vector(-1, -1, -1))
+      );
+
+      // אור נקודתי קטן מהמרכז – למרקם
+      scene2.lights.add(
+              new PointLight(new Color(100, 255, 100), new Point(0, 20, -50))
+                      .setKl(0.002).setKQ(0.0002)
+      );
+
+      camera2.setResolution(600, 600)
               .build()
               .renderImage()
               .writeToImage("TEST2");
    }
+
 
 
 }

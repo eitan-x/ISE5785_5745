@@ -1,60 +1,46 @@
 package lighting;
+
 import primitives.Color;
 import primitives.Point;
 import primitives.Vector;
 
+import static primitives.Util.alignZero;
+
 /**
- * SpotLight class represents a light source with a specific position in the scene
+ * SpotLight represents a light source that has direction and a beam angle.
  */
-public class SpotLight extends PointLight{
+public class SpotLight extends PointLight {
+
     private final Vector direction;
-    private double narrowBeam = 1d;
+    private double narrowBeam = 1.0; // Beam concentration factor
+
+    /**
+     * Constructs a spot light with intensity, position and direction.
+     * @param intensity the color intensity of the light
+     * @param position the position of the light source
+     * @param direction the direction of the spotlight
+     */
+    public SpotLight(Color intensity, Point position, Vector direction) {
+        super(intensity, position);
+        this.direction = direction.normalize();
+    }
 
     public SpotLight setNarrowBeam(double narrowBeam) {
         this.narrowBeam = narrowBeam;
         return this;
     }
 
-
-
-    /**
-     * get intensity of the light at a specific point
-     * @param color color of the light
-     * @param direction direction of the light
-     * @param position position of the light source
-     */
-    public SpotLight(Color color, Point position, Vector direction) {
-        super(color, position);
-        this.direction = direction.normalize();
-    }
-
-    /**
-     * set attenuation factor
-     * @param kC attenuation factor
-     * @return
-     */
-
+    @Override
     public SpotLight setKc(double kC) {
         super.setKc(kC);
         return this;
     }
 
-    /**
-     * set attenuation factor
-     * @param kL attenuation factor
-     * @return this SpotLight instance
-     */
-
-    public PointLight setKl(double kL) {
+    @Override
+    public SpotLight setKl(double kL) {
         super.setKl(kL);
         return this;
     }
-
-    /**
-     * set attenuation factor
-     * @param kQ attenuation factor
-     * @return this SpotLight instance
-     */
 
     public SpotLight setKq(double kQ) {
         super.setKQ(kQ);
@@ -62,13 +48,20 @@ public class SpotLight extends PointLight{
     }
 
     /**
-     * get direction of the light at a specific point
-     * @param p point to which the intensity is calculated
-     * @return direction of the light at a specific point
+     * Returns the attenuated and direction-weighted intensity at point p
      */
     @Override
     public Color getIntensity(Point p) {
-        Color oldColor = super.getIntensity(p);
-        return oldColor.scale(Math.max(0d, direction.dotProduct(getL(p))));
+        Vector l = getL(p);
+        double projection = alignZero(direction.dotProduct(l));
+
+        if (projection <= 0) {
+            return Color.BLACK; // Point is outside of the spotlight cone
+        }
+
+        // scale by beam narrowing factor
+        double factor = Math.pow(projection, narrowBeam);
+
+        return super.getIntensity(p).scale(factor);
     }
 }

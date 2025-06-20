@@ -45,8 +45,9 @@ public class PointLight extends Light implements LightSource {
         double distanceSquared = p.distanceSquared(position);
         double distance = Math.sqrt(distanceSquared);
         double attenuation = kC + kL * distance + kQ * distanceSquared;
-        return intensity.reduce((int) attenuation);
+        return intensity.scale(1.0 / attenuation); // במקום reduce()
     }
+
 
     @Override
     public Vector getL(Point p) {

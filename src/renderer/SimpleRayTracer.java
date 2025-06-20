@@ -73,9 +73,10 @@ public class SimpleRayTracer extends RayTracerBase {
         // Compute the dot product between light direction and normal
         intersection.lnDotProduct = alignZero(intersection.lightDirection.dotProduct(intersection.normalAtPoint));
 
-        // Return false if either dot product is zero
-        return !isZero(intersection.lnDotProduct) && !isZero(intersection.vnDotProduct);
+        // ✅ Return false if the light and view are on opposite sides of the surface
+        return intersection.vnDotProduct * intersection.lnDotProduct > 0;
     }
+
 
 
 
