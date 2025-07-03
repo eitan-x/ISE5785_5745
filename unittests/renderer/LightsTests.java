@@ -237,11 +237,11 @@ class LightsTests {
       );
       scene2.lights.add(
               new PointLight(trianglesLightColor, trianglesLightPosition)
-                      .setKl(0.003).setKQ(0.0002)
+                      .setKl(0.3).setKQ(0.2)
       );
       scene2.lights.add(
               new SpotLight(trianglesLightColor, trianglesLightPosition, trianglesLightDirection)
-                      .setKl(0.002).setKQ(0.0001).setNarrowBeam(20)
+                      .setKl(0.00002).setKQ(0.0000001).setNarrowBeam(5)
       );
 
       camera2

@@ -28,6 +28,15 @@ public class SimpleRayTracer extends RayTracerBase {
         super(scene);
     }
 
+
+
+    private static final double DELTA = 0.1;
+
+
+    private boolean unshaded(Intersection intersection) {
+        return false;
+    }
+
     /**
      * Traces a ray and returns the color at the closest intersection point.
      * @param ray the ray to trace
@@ -73,7 +82,7 @@ public class SimpleRayTracer extends RayTracerBase {
         // Compute the dot product between light direction and normal
         intersection.lnDotProduct = alignZero(intersection.lightDirection.dotProduct(intersection.normalAtPoint));
 
-        // ✅ Return false if the light and view are on opposite sides of the surface
+        // Return false if the light and view are on opposite sides of the surface
         return intersection.vnDotProduct * intersection.lnDotProduct > 0;
     }
 
@@ -113,24 +122,36 @@ public class SimpleRayTracer extends RayTracerBase {
     }
 
 
+    /**
+     * Calculates the specular (shiny highlight) component at the intersection point.
+     *
+     * @param inter the intersection data
+     * @param l the normalized direction vector from point to light source
+     * @param nl the dot product N·L (used again here)
+     * @return the specular light contribution as Double3
+     */
     private Double3 calcSpecular(Intersection inter, Vector l, double nl) {
-        // normalize normal and view‐direction
+        // Normalize normal vector (N)
         Vector n = inter.normalAtPoint.normalize();
-        Vector v = inter.viewDirection.normalize().scale(-1); // from point back to camera
 
-        // reflection vector R = 2*(N·L)*N – L
+        // Ensure viewDirection is from point to camera (no need to flip)
+        Vector v = inter.viewDirection.normalize();
+
+        // Calculate reflection vector: R = 2*(N·L)*N – L
         Vector r = n.scale(2 * nl).subtract(l).normalize();
 
-        // R·V
+        // Dot product R·V
         double rv = alignZero(r.dotProduct(v));
+
+        // If the angle between R and V is more than 90°, there's no specular effect
         if (rv <= 0) {
-            // if angle > 90°, no specular contribution
             return Double3.ZERO;
         }
 
-        // specular = kS * (R·V)^shininess
+        // Apply Phong model: kS * (R·V)^shininess
         return inter.material.kS.scale(Math.pow(rv, inter.material.nShininess));
     }
+
 
 
     private Double3 calcDiffusive(Intersection inter, double nl) {

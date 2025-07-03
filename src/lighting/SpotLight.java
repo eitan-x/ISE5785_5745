@@ -47,9 +47,7 @@ public class SpotLight extends PointLight {
         return this;
     }
 
-    /**
-     * Returns the attenuated and direction-weighted intensity at point p
-     */
+
     @Override
     public Color getIntensity(Point p) {
         Vector l = getL(p);
