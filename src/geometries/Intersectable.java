@@ -58,6 +58,7 @@ public abstract class Intersectable {
 
 
 
+
         /**
          * Constructs an intersection record.
          * @param geometry the intersected geometry

@@ -13,12 +13,13 @@ import java.util.List;
 
 import static primitives.Util.alignZero;
 import static primitives.Util.isZero;
-
 /**
  * A simple ray tracer that finds the color at the closest point hit by a ray.
- * @author Eitan lafair
+ * Shoots rays into the scene and returns the color of what they hit.
  */
 public class SimpleRayTracer extends RayTracerBase {
+
+    private static final double DELTA = 0.1; // Small offset to avoid self-shadowing
 
     /**
      * Constructs the ray tracer with a given scene.
@@ -28,163 +29,137 @@ public class SimpleRayTracer extends RayTracerBase {
         super(scene);
     }
 
-
-
-    private static final double DELTA = 0.1;
-
-
-    private boolean unshaded(Intersection intersection) {
-        return false;
-    }
-
     /**
      * Traces a ray and returns the color at the closest intersection point.
-     * @param ray the ray to trace
-     * @return the color at the closest point, or the background color if no intersection found
+     * Basically: Shoots a ray and sees what color it hits.
      */
     @Override
     public Color traceRay(Ray ray) {
         List<Intersection> intersections = scene.geometries.calculateIntersections(ray);
-
-        if (intersections == null) {
-            return scene.background;
-        }
+        if (intersections == null) return scene.background;
 
         Intersection closestIntersection = ray.findClosestIntersection(intersections);
+        if (closestIntersection == null) return scene.background;
 
-        if (closestIntersection == null) {
-            return scene.background;
-        }
-
-        return calcColor(closestIntersection,ray);
+        return calcColor(closestIntersection, ray);
     }
 
+    /**
+     * Checks if a point is lit by a light source (i.e., not in shadow).
+     * Basically: Sends a ray toward the light and checks if anything blocks it.
+     */
+    private boolean unshaded(Intersection intersection) {
+        Vector l = intersection.lightDirection.scale(-1); // Direction from point to light
+        Vector n = intersection.normalAtPoint;
+        Vector delta = n.scale(DELTA); // Slight offset to avoid the ray starting inside the surface
+        Ray shadowRay = new Ray(intersection.point.add(delta), l); // Shadow ray toward light
+
+        List<Intersection> shadowIntersections = scene.geometries.calculateIntersections(shadowRay);
+        if (shadowIntersections == null) return true;
+
+        double lightDistance = intersection.lightSource.getDistance(intersection.point);
+
+        for (Intersection inter : shadowIntersections) {
+            if (inter.geometry != intersection.geometry) {
+                double t = inter.point.distance(shadowRay.head); // Distance from shadow ray start to intersection
+                if (alignZero(t - lightDistance) < 0) {
+                    return false; // Something blocks the light
+                }
+            }
+        }
+
+        return true; // No object blocks the light
+    }
+
+    /**
+     * Prepares the intersection for shading calculations by computing the normal and view direction.
+     * Basically: Sets up some values we need to do lighting math.
+     */
     public boolean preprocessIntersection(Intersection intersection, Vector rayDirection) {
-        intersection.viewDirection = rayDirection;
-
-        // Compute normal at the intersection point
-        intersection.normalAtPoint = intersection.geometry.getNormal(intersection.point);
-
-        // Compute the dot product of the view direction and the normal
-        intersection.vnDotProduct = alignZero(intersection.viewDirection.dotProduct(intersection.normalAtPoint));
-
-        // Return false if the dot product is zero, otherwise true
-        return !isZero(intersection.vnDotProduct);
+        intersection.viewDirection = rayDirection; // Direction from point to viewer
+        intersection.normalAtPoint = intersection.geometry.getNormal(intersection.point); // Surface normal
+        intersection.vnDotProduct = alignZero(intersection.viewDirection.dotProduct(intersection.normalAtPoint)); // Viewer-normal angle
+        return !isZero(intersection.vnDotProduct); // If viewer looks straight across the surface, skip lighting
     }
 
-    public boolean setLightSource(Intersection intersection, LightSource lightSource){
-        // Set the light source
+    /**
+     * Sets light-related fields for the intersection.
+     * Basically: Tells the intersection which light is shining on it and from what direction.
+     */
+    public boolean setLightSource(Intersection intersection, LightSource lightSource) {
         intersection.lightSource = lightSource;
-
-        // Compute direction from the point to the light source
-        intersection.lightDirection = lightSource.getL(intersection.point);
-
-        // Compute the dot product between light direction and normal
-        intersection.lnDotProduct = alignZero(intersection.lightDirection.dotProduct(intersection.normalAtPoint));
-
-        // Return false if the light and view are on opposite sides of the surface
-        return intersection.vnDotProduct * intersection.lnDotProduct > 0;
+        intersection.lightDirection = lightSource.getL(intersection.point); // Direction from point to light
+        intersection.lnDotProduct = alignZero(intersection.lightDirection.dotProduct(intersection.normalAtPoint)); // Light-normal angle
+        return intersection.vnDotProduct * intersection.lnDotProduct > 0; // Light and viewer must be on same side
     }
 
-
-
-
-
+    /**
+     * Calculates the local lighting at a point (diffuse + specular).
+     * Basically: Adds the light effects from all light sources if the point is not in shadow.
+     */
     private Color calcColorLocalEffects(Intersection intersection) {
-        // Start with the geometry’s emission color
-        Color result = intersection.geometry.getEmission();
+        Color result = intersection.geometry.getEmission(); // Start with the object’s self-glow color
 
-        // If the view‐normal dot is zero, no local lighting contribution
         if (!preprocessIntersection(intersection, intersection.viewDirection)) {
-            return result;
+            return result; // No lighting if surface is sideways to viewer
         }
 
-        // For each light in the scene
         for (LightSource light : scene.lights) {
-            // Initialize light‐related fields; skip if dot is zero
-            if (!setLightSource(intersection, light)) {
-                continue;
+            if (!setLightSource(intersection, light) || !unshaded(intersection)) {
+                continue; // Skip lights that are blocked or from the wrong direction
             }
 
-            double nl = intersection.lnDotProduct;           // N·L
-            Vector l   = intersection.lightDirection;        // direction to light
-            Color  iL  = light.getIntensity(intersection.point);
+            double nl = intersection.lnDotProduct;
+            Vector l = intersection.lightDirection;
+            Color iL = light.getIntensity(intersection.point); // Light intensity at this point
 
-            // Compute diffuse and specular terms
-            Double3 diff = calcDiffusive(intersection, nl);
-            Double3 spec = calcSpecular(intersection, l, nl);
+            Double3 diff = calcDiffusive(intersection, nl); // Matte lighting
+            Double3 spec = calcSpecular(intersection, l, nl); // Shiny highlight
 
-            // Accumulate contribution: I_L * (diffuse + specular)
-            result = result.add(iL.scale(diff).add(iL.scale(spec)));
+            result = result.add(iL.scale(diff).add(iL.scale(spec))); // Add total light effect
         }
 
         return result;
     }
 
-
     /**
-     * Calculates the specular (shiny highlight) component at the intersection point.
-     *
-     * @param inter the intersection data
-     * @param l the normalized direction vector from point to light source
-     * @param nl the dot product N·L (used again here)
-     * @return the specular light contribution as Double3
+     * Calculates the specular reflection (the shiny highlight).
+     * Basically: Adds a white sparkle if the surface reflects light toward the viewer.
      */
     private Double3 calcSpecular(Intersection inter, Vector l, double nl) {
-        // Normalize normal vector (N)
         Vector n = inter.normalAtPoint.normalize();
-
-        // Ensure viewDirection is from point to camera (no need to flip)
         Vector v = inter.viewDirection.normalize();
+        Vector r = n.scale(2 * nl).subtract(l).normalize(); // Reflection vector
+        double rv = alignZero(r.dotProduct(v)); // Angle between reflection and viewer
 
-        // Calculate reflection vector: R = 2*(N·L)*N – L
-        Vector r = n.scale(2 * nl).subtract(l).normalize();
+        if (rv <= 0) return Double3.ZERO; // No shine if facing wrong way
 
-        // Dot product R·V
-        double rv = alignZero(r.dotProduct(v));
-
-        // If the angle between R and V is more than 90°, there's no specular effect
-        if (rv <= 0) {
-            return Double3.ZERO;
-        }
-
-        // Apply Phong model: kS * (R·V)^shininess
-        return inter.material.kS.scale(Math.pow(rv, inter.material.nShininess));
+        return inter.material.kS.scale(Math.pow(rv, inter.material.nShininess)); // Shiny effect
     }
-
-
-
-    private Double3 calcDiffusive(Intersection inter, double nl) {
-        // diffuse = kD * |N·L|
-        double factor = nl < 0 ? -nl : nl;
-        return inter.material.kD.scale(factor);
-    }
-
-
-
-
 
     /**
-     * Calculates the color at a given intersection point.
-     * Currently, returns the sum of the ambient light and the emission color of the geometry.
-     * @param intersection the intersection object containing geometry and point
-     * @return the calculated color at the intersection
+     * Calculates the diffuse reflection (basic lighting).
+     * Basically: Adds brightness based on how directly the light hits the surface.
      */
-    private Color calcColor(Intersection intersection, Ray ray) {
-        // initialize intersection data; return black if view direction is perpendicular to surface
-        if (!preprocessIntersection(intersection, ray.direction)) {
-            return Color.BLACK;
-        }
-
-        // apply ambient lighting: ambient intensity multiplied by material's ambient coefficient
-        Color color = scene.ambientLight.getIntensity()
-                .scale(intersection.geometry.getMaterial().kA);
-
-        // add the diffuse and specular contributions from all light sources
-        Color localEffects = calcColorLocalEffects(intersection);
-        color = color.add(localEffects);
-
-        return color;
+    private Double3 calcDiffusive(Intersection inter, double nl) {
+        double factor = nl < 0 ? -nl : nl; // Use the absolute value of N·L
+        return inter.material.kD.scale(factor); // Matte lighting = kD * |N·L|
     }
 
+    /**
+     * Calculates the total color at an intersection (ambient + local lighting).
+     * Basically: Figures out the final color at the point, including shadows and light.
+     */
+    private Color calcColor(Intersection intersection, Ray ray) {
+        if (!preprocessIntersection(intersection, ray.direction)) {
+            return Color.BLACK; // Skip if camera looks flat across the surface
+        }
+
+        Color color = scene.ambientLight.getIntensity()
+                .scale(intersection.geometry.getMaterial().kA); // Ambient light = base light everywhere
+
+        color = color.add(calcColorLocalEffects(intersection)); // Add all other lights
+        return color;
+    }
 }
+
