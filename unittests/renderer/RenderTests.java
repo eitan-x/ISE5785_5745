@@ -95,19 +95,19 @@ class RenderTests {
               .add(
                       // Center sphere with KA = (0.4, 0.4, 0.4)
                       new Sphere(new Point(0, 0, -100), 50d)
-                              .setMaterial(new Material().setkA(new Double3(0.4))),
+                              .setMaterial(new Material().setKa(new Double3(0.4))),
 
                       // Top-left triangle (formerly green) with KA = (0, 0.8, 0)
                       new Triangle(new Point(-100, 0, -100), new Point(0, 100, -100), new Point(-100, 100, -100))
-                              .setMaterial(new Material().setkA(new Double3(0, 0.8, 0))),
+                              .setMaterial(new Material().setKa(new Double3(0, 0.8, 0))),
 
                       // Bottom-left triangle (formerly red) with KA = (0.8, 0, 0)
                       new Triangle(new Point(-100, 0, -100), new Point(0, -100, -100), new Point(-100, -100, -100))
-                              .setMaterial(new Material().setkA(new Double3(0.8, 0, 0))),
+                              .setMaterial(new Material().setKa(new Double3(0.8, 0, 0))),
 
                       // Bottom-right triangle (formerly blue) with KA = (0, 0, 0.8)
                       new Triangle(new Point(100, 0, -100), new Point(0, -100, -100), new Point(100, -100, -100))
-                              .setMaterial(new Material().setkA(new Double3(0, 0, 0.8)))
+                              .setMaterial(new Material().setKa(new Double3(0, 0, 0.8)))
               );
 
       // Build the camera and render the image with a white grid

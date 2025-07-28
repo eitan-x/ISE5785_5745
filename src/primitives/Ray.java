@@ -3,6 +3,8 @@ package primitives;
 import java.util.List;
 
 import static primitives.Util.isZero;
+import static renderer.SimpleRayTracer.DELTA;
+
 import geometries.Intersectable.Intersection;
 
 /**
@@ -25,6 +27,19 @@ public class Ray {
     public Ray(Point head, Vector direction) {
         this.head = head;
         this.direction = direction.normalize();
+    }
+
+    /**
+     * Constructs a ray shifted slightly from the surface to avoid self-intersection.
+     *
+     * @param p      starting point of the ray
+     * @param v      direction vector
+     * @param normal normal vector at the starting point
+     */
+    public Ray(Point p, Vector v, Vector normal) {
+        this.direction = v.normalize();// normalize the direction vector
+        // shift the head point slightly along the normal to prevent precision issues
+        this.head = p.add(normal.scale(v.dotProduct(normal) > 0 ? DELTA : -DELTA));
     }
 
     @Override
