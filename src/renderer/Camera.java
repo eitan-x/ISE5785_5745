@@ -1,9 +1,6 @@
 package renderer;
 
-import primitives.Point;
-import primitives.Ray;
-import primitives.Vector;
-import primitives.Color;
+import primitives.*;
 import scene.Scene;
 
 import java.util.MissingResourceException;
@@ -12,9 +9,6 @@ import static primitives.Util.alignZero;
 
 /**
  * Represents a Camera in 3D space with adjustable settings for view direction,
- * position, and viewing plane properties.
- * Handles ray construction, image rendering, and grid drawing on images.
- * Uses a builder pattern for convenient setup.
  *
  * @author Eitan Lafair
  */
@@ -34,11 +28,27 @@ public class Camera implements Cloneable {
     private int nX = 1; // Image resolution X
     private int nY = 1; // Image resolution Y
 
+    private static final String CAMERA_CLASS_NAME = "Camera"; // Class name for error messages
+    private static final String MISSING_DATA_MSG = "Missing rendering data"; // Error message
 
-    private static final String CAMERA_CLASS_NAME = "Camera";
-    private static final String MISSING_DATA_MSG = "Missing rendering data";
+    private boolean useAntiAliasing = false; // Whether anti-aliasing is enabled
+    private int samplesPerDim = 5; // Number of samples per pixel dimension for anti-aliasing
+    private BlackBoard.Shape aaShape = BlackBoard.Shape.RECTANGLE; // Shape of anti-aliasing sampling area
 
+    public Camera enableAntiAliasing(boolean enable) {
+        this.useAntiAliasing = enable;
+        return this;
+    }
 
+    public Camera setAntiAliasingSamples(int samplesPerDim) {
+        this.samplesPerDim = samplesPerDim;
+        return this;
+    }
+
+    public Camera setAntiAliasingShape(BlackBoard.Shape shape) {
+        this.aaShape = shape;
+        return this;
+    }
 
     /**
      * Default constructor.
@@ -57,7 +67,6 @@ public class Camera implements Cloneable {
 
     /**
      * Returns a new instance of the Camera builder.
-     * @return a Builder instance for creating a Camera object
      */
     public static Builder getBuilder() {
         return new Builder();
@@ -65,46 +74,69 @@ public class Camera implements Cloneable {
 
     /**
      * Constructs a ray through a pixel (i, j) on the camera's view plane.
-     * @param nX number of horizontal pixels
-     * @param nY number of vertical pixels
-     * @param j column index of the pixel
-     * @param i row index of the pixel
-     * @return the ray passing through the pixel
      */
     public Ray constructRay(int nX, int nY, int j, int i) {
-        pointCenter = p0.add(vT0.scale(distance));
+        pointCenter = p0.add(vT0.scale(distance)); // Calculate center of view plane
+        double rX = width / nX; // Pixel width
+        double rY = height / nY; // Pixel height
+
+        double xJ = (j - (nX - 1) / 2d) * rX; // X offset from center
+        double yI = -(i - (nY - 1) / 2d) * rY; // Y offset from center (negative because image Y is downward)
+
+        Point pIJ = pointCenter;
+        if (xJ != 0) pIJ = pIJ.add(vRight.scale(xJ)); // Add horizontal offset
+        if (yI != 0) pIJ = pIJ.add(vUp.scale(yI)); // Add vertical offset
+
+        Vector vIJ = pIJ.subtract(p0); // Vector from camera to pixel
+        return new Ray(p0, vIJ); // Construct ray through the pixel
+    }
+
+    private Color castRayAA(int j, int i) {
+        pointCenter = p0.add(vT0.scale(distance)); // Center of view plane
         double rX = width / nX;
         double rY = height / nY;
 
         double xJ = (j - (nX - 1) / 2d) * rX;
         double yI = -(i - (nY - 1) / 2d) * rY;
 
-        Point pIJ = pointCenter;
-        if (xJ != 0) pIJ = pIJ.add(vRight.scale(xJ));
-        if (yI != 0) pIJ = pIJ.add(vUp.scale(yI));
+        Point pixelCenter = pointCenter;
+        if (!Util.isZero(xJ)) pixelCenter = pixelCenter.add(vRight.scale(xJ));
+        if (!Util.isZero(yI)) pixelCenter = pixelCenter.add(vUp.scale(yI));
 
-        Vector vIJ = pIJ.subtract(p0);
-        return new Ray(p0, vIJ);
+        BlackBoard blackboard = new BlackBoard(
+                pixelCenter,
+                vRight,
+                vUp,
+                rX,
+                rY,
+                samplesPerDim,
+                aaShape
+        );
+
+        var samplePoints = blackboard.generateSamplePoints();
+        Color finalColor = Color.BLACK;
+
+        for (Point sample : samplePoints) {
+            Vector dir = sample.subtract(p0); // Vector to sample
+            if (dir.lengthSquared() == 0) continue; // Skip zero vector
+
+            Ray ray = new Ray(p0, dir); // Create ray
+            finalColor = finalColor.add(rayTracer.traceRay(ray)); // Accumulate color
+        }
+
+        return finalColor.reduce(samplePoints.size()); // Average color
     }
 
     /**
-     * Casts a ray through a pixel (j, i) and gets its color by tracing it.
-     * @param j column index of the pixel
-     * @param i row index of the pixel
-     * @return color obtained by tracing the ray
+     * Casts a ray through a pixel and returns the resulting color.
      */
     private Color castRay(int j, int i) {
-        Ray ray = constructRay(
-                this.imageWriter.nX(),
-                this.imageWriter.nY(),
-                j,
-                i);
+        Ray ray = constructRay(this.imageWriter.nX(), this.imageWriter.nY(), j, i);
         return this.rayTracer.traceRay(ray);
     }
 
     /**
      * Renders the image by tracing rays through all pixels.
-     * @return this Camera object
      */
     public Camera renderImage() {
         if (this.imageWriter == null)
@@ -112,26 +144,23 @@ public class Camera implements Cloneable {
         if (this.rayTracer == null)
             throw new UnsupportedOperationException("Missing rayTracerBase");
 
-        for (int i = 0; i < this.imageWriter.nX(); i++) {
-            for (int j = 0; j < this.imageWriter.nY(); j++) {
-                Color color = castRay(j, i);
-                this.imageWriter.writePixel(j, i, color);
+        for (int i = 0; i < this.imageWriter.nY(); i++) {
+            for (int j = 0; j < this.imageWriter.nX(); j++) {
+                Color color = useAntiAliasing ? castRayAA(j, i) : castRay(j, i);
+                this.imageWriter.writePixel(j, i, color); // Write pixel color to image
             }
         }
         return this;
     }
 
     /**
-     * Prints a grid on the image using the given color and interval.
-     * @param interval grid spacing
-     * @param color grid color
-     * @return this Camera object
+     * Draws a grid on the image.
      */
     public Camera printGrid(int interval, Color color) {
         for (int i = 0; i < nY; i++) {
             for (int j = 0; j < nX; j++) {
                 if (i % interval == 0 || j % interval == 0) {
-                    imageWriter.writePixel(j, i, color);
+                    imageWriter.writePixel(j, i, color); // Draw grid line
                 }
             }
         }
@@ -139,38 +168,25 @@ public class Camera implements Cloneable {
     }
 
     /**
-     * Writes the image to a file.
-     * @param filename the name of the image file (without extension)
-     * @return this Camera object
+     * Writes the rendered image to file.
      */
     public Camera writeToImage(String filename) {
-        imageWriter.writeToImage(filename);
+        imageWriter.writeToImage(filename); // Save image to file
         return this;
     }
 
     /**
-     * A builder class for creating Camera instances with fluent API.
+     * Builder class for constructing a Camera using fluent API.
      */
     public static class Builder {
         private final Camera camera = new Camera();
 
-        /**
-         * Sets the location of the camera.
-         * @param p the camera position
-         * @return this builder instance
-         */
         public Builder setLocation(Point p) {
             if (p == null) throw new IllegalArgumentException("Camera location cannot be null");
             camera.p0 = p;
             return this;
         }
 
-        /**
-         * Sets the camera orientation using vTo and vUp vectors.
-         * @param vTo direction to look at
-         * @param vUp up direction
-         * @return this builder instance
-         */
         public Builder setDirection(Vector vTo, Vector vUp) {
             if (vTo == null || vUp == null)
                 throw new IllegalArgumentException("Direction vectors cannot be null");
@@ -183,12 +199,6 @@ public class Camera implements Cloneable {
             return this;
         }
 
-        /**
-         * Sets camera direction to face a target point using an approximate up vector.
-         * @param target target point to look at
-         * @param approxUp approximate up direction
-         * @return this builder instance
-         */
         public Builder setDirection(Point target, Vector approxUp) {
             if (target == null || approxUp == null)
                 throw new IllegalArgumentException("Target and approxUp cannot be null");
@@ -205,21 +215,10 @@ public class Camera implements Cloneable {
             return this;
         }
 
-        /**
-         * Sets camera direction to look at a target with default up vector (0,1,0).
-         * @param target target point to look at
-         * @return this builder instance
-         */
         public Builder setDirection(Point target) {
-            return setDirection(target, new Vector(0, 1, 0));
+            return setDirection(target, new Vector(0, 1, 0)); // Default up vector
         }
 
-        /**
-         * Sets the size of the view plane.
-         * @param height height of the view plane
-         * @param width width of the view plane
-         * @return this builder instance
-         */
         public Builder setVpSize(double height, double width) {
             if (alignZero(width) <= 0 || alignZero(height) <= 0)
                 throw new IllegalArgumentException("View plane size must be positive");
@@ -228,11 +227,6 @@ public class Camera implements Cloneable {
             return this;
         }
 
-        /**
-         * Sets the distance between the camera and the view plane.
-         * @param distance distance to view plane
-         * @return this builder instance
-         */
         public Builder setVpDistance(double distance) {
             if (alignZero(distance) <= 0)
                 throw new IllegalArgumentException("View plane distance must be positive");
@@ -240,12 +234,6 @@ public class Camera implements Cloneable {
             return this;
         }
 
-        /**
-         * Sets the resolution of the view plane.
-         * @param nX number of horizontal pixels
-         * @param nY number of vertical pixels
-         * @return this builder instance
-         */
         public Builder setResolution(int nX, int nY) {
             if (nX <= 0 || nY <= 0)
                 throw new IllegalArgumentException("Resolution must be positive");
@@ -254,12 +242,6 @@ public class Camera implements Cloneable {
             return this;
         }
 
-        /**
-         * Sets the ray tracer using scene and type.
-         * @param scene the scene to use
-         * @param type the ray tracer type (currently only SIMPLE supported)
-         * @return this builder instance
-         */
         public Builder setRayTracer(Scene scene, RayTracerType type) {
             if (type == RayTracerType.SIMPLE) {
                 camera.rayTracer = new SimpleRayTracer(scene);
@@ -269,10 +251,6 @@ public class Camera implements Cloneable {
             return this;
         }
 
-        /**
-         * Builds the final camera object.
-         * @return the constructed Camera
-         */
         public Camera build() {
             if (camera.p0 == null)
                 throw new MissingResourceException(MISSING_DATA_MSG,CAMERA_CLASS_NAME,"position");
@@ -281,10 +259,8 @@ public class Camera implements Cloneable {
                 throw new MissingResourceException(MISSING_DATA_MSG,CAMERA_CLASS_NAME,"vTO or vUP");
 
             if (camera.vRight == null) {
-                // ננרמל את vTo ו־vUp לפני החישוב
                 camera.vT0 = camera.vT0.normalize();
                 camera.vUp = camera.vUp.normalize();
-
                 camera.vRight = camera.vT0.crossProduct(camera.vUp).normalize();
             }
 
@@ -297,7 +273,7 @@ public class Camera implements Cloneable {
 
             camera.imageWriter = new ImageWriter(camera.nX, camera.nY);
             if (camera.rayTracer == null) {
-                camera.rayTracer = new SimpleRayTracer(null); // Empty scene
+                camera.rayTracer = new SimpleRayTracer(null); // Default to empty scene
             }
             camera.vT0 = camera.vT0.normalize();
             camera.vUp = camera.vUp.normalize();
@@ -311,6 +287,5 @@ public class Camera implements Cloneable {
                 return temp;
             }
         }
-
     }
 }

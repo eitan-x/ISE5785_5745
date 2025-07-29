@@ -81,4 +81,7 @@ public class Point {
         return dx * dx + dy * dy + dz * dz;
     }
 
+
+
+
 }
