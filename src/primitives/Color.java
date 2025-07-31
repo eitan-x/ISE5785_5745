@@ -63,6 +63,19 @@ public class Color {
         return new java.awt.Color(ir > 255 ? 255 : ir, ig > 255 ? 255 : ig, ib > 255 ? 255 : ib);
     }
 
+
+    public Color subtract(Color other) {
+        double r = rgb.d1() - other.rgb.d1();
+        double g = rgb.d2() - other.rgb.d2();
+        double b = rgb.d3() - other.rgb.d3();
+
+        return new Color(Math.abs(r), Math.abs(g), Math.abs(b));
+    }
+
+    public double length() {
+        return Math.sqrt(rgb.d1() * rgb.d1() + rgb.d2() * rgb.d2() + rgb.d3() * rgb.d3());
+    }
+
     /**
      * Operation of adding this and one or more other colors (by component)
      * @param  colors one or more other colors to add
