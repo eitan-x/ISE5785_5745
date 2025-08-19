@@ -1,6 +1,7 @@
-# Mini Project – Java 3D Renderer -Eitan-x
-
-A straightforward ray-tracing based 3D renderer written in Java as part of my cs degree projects.
+# Mini Project – Java 3D Renderer
+# Eitan-x
+Java 3D renderer using ray-tracing, adaptive supersampling, and Phong shading.  
+Multithreaded for speed, with unit tests for scene rendering and image generation.
 
 ## Key Features
 - Basic ray-tracing and scene setup
@@ -36,6 +37,6 @@ The resulting images will be saved in the images/ directory.
 
 
 ## Examples 
-![Sample Render](images/ASS_On_MT_On.png.png)
+![Sample Render](images/refractionShadow.png)
 
 ![Sample Render](images/teapot2.png)
