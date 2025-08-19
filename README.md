@@ -27,7 +27,7 @@ Ensure that your IDE is configured to use the correct JDK (1.8) and that JUnit 5
 ## Getting Started
 1. Clone the repo:
     ```bash
-   git clone https://github.com/eitan-x/ISE5785_5745.git
+   git clone https://github.com/eitan-x/Java3DRenderer_Mini.git
 Open it in your IDE (e.g., IntelliJ).
 Run the tests, use your IDE’s test runner or an appropriate build tool.
 To see example renders or to create your own test scenes, run the tests using your IDE’s test runner or an appropriate build tool.
