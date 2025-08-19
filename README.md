@@ -36,4 +36,6 @@ The resulting images will be saved in the images/ directory.
 
 
 ## Examples 
-![Sample Render](images/ASS_On_MT_On.png.png)
+![Sample Render](images/ASS_On_MT_On.png)
+
+![Sample Render](images/teapot2.png)
